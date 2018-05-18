@@ -278,9 +278,6 @@ void Lcm::Run() {
 
         features.erase(_itr5);
         ++removed;
-        vector<Feature>::iterator _itr6 = features.end();
-        features.erase(_itr6);
-        ++removed;
         //  cout << "No." << minid2 << ": *** REMOVED ***" << endl;
       }
 
