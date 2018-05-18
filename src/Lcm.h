@@ -119,6 +119,7 @@ class Lcm {
   time_t numerical_end_time;
   double numerical_time;
   int    pruning_number;
+  int    nodes_number;
 
   // methods for LARS
   Database database, validation_database;
@@ -128,5 +129,6 @@ class Lcm {
   bool GainTest(const vector<int> &transactionList, int Type);
   //  bool GainTestLars(const vector<int> &transactionList);
   void AddItem(const vector<int> itemsets, const vector<int> &transactionList, int Type);
+  inline void End_clock(clock_t allstart);
 };
 #endif // _LCM_H_

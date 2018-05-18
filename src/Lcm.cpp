@@ -50,6 +50,7 @@ void Lcm::LcmIter(Database &database, vector<int> &itemsets, vector<int> &transa
     pruning_number += 1;
     return;
   }
+  nodes_number += 1;
   AddItem(itemsets, transactionList, boundType);
 
   //  PrintItemsets(itemsets, occ); // print frequent itemset

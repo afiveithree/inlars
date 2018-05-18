@@ -126,6 +126,7 @@ void Lcm::Run() {
     for(unsigned int itr = 0; itr < maxiter; itr++){
       if(itr >= l*3){
         cerr << "Iteration limit reached" << endl;
+        End_clock(allstart);
         exit(0);
       }
       unsigned int n = beta.size();
@@ -226,6 +227,7 @@ void Lcm::Run() {
 
       if(mind1 > 1e4 && mind2 > 1e4){
         cout << "NO MORE FEATURES" << endl;
+        End_clock(allstart);
         exit(0);
       }
 
@@ -321,6 +323,7 @@ void Lcm::Run() {
       for(unsigned int i = 0; i < gamma.size(); i++){
         if(isnan(gamma[i]) || isinf(gamma[i])){
           cout << "STOP" << endl;
+          End_clock(allstart);
           exit(0);
         }
       }
@@ -424,13 +427,7 @@ void Lcm::Run() {
       } //end if m > 0
     } // end MAIN ITERATION
 
-    clock_t allend = clock();
-    cout << endl << "***END***" << endl;
-    cout << "ALL TIME: " << (double)(allend - allstart)/(double)CLOCKS_PER_SEC << endl;
-    cout << "NUMERICAL TIME: " << (double)numerical_time/(double)CLOCKS_PER_SEC << endl;
-    cout << "MINING TIME: " << (double)total_mine_time/(double)CLOCKS_PER_SEC << endl;
-    //      cout << "Inf::" << "maxpat: " << max_pat << " minsup: " << min_sup << " pruning number:" << pruning_number << endl;
-
+    End_clock(allstart);
 
   } // end try
 
@@ -444,6 +441,9 @@ void Lcm::LcmWrapper(int boundType) {
   OccurenceDeriver occ(database);
   maxItem = database.GetMaxItem();
   minItem = database.GetMinItem();
+
+  int prev_nodes_number   = nodes_number;
+  int prev_pruning_number = pruning_number;
 
   vector<int> itemsets;
   vector<int> transactionList;
@@ -478,6 +478,8 @@ void Lcm::LcmWrapper(int boundType) {
     while (!currentFeatures.empty()) currentFeatures.pop();
 
   }
+  nodes_number   = max(nodes_number,prev_nodes_number);
+  pruning_number = max(pruning_number,prev_pruning_number);
 }
 
 /********************************************************************************
@@ -591,4 +593,13 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
   //  }
   //  features.push_back(feature);
   //  nextGain = currentFeatures.top().gain;
+}
+
+inline void Lcm::End_clock(clock_t allstart){
+  clock_t allend = clock();
+  cout << endl << "***END***" << endl;
+  cout << "ALL TIME: " << (double)(allend -   allstart)/(double)CLOCKS_PER_SEC << endl;
+  cout << "NUMERICAL TIME: " << (double)numerical_time/(double)CLOCKS_PER_SEC << endl;
+  cout << "MINING TIME: " << (double)total_mine_time/(double)CLOCKS_PER_SEC << endl;
+  cout << "Inf::" << "maxpat: " << max_pat << " minsup: " << min_sup << " pruning number:" << pruning_number << " nodes number:" << nodes_number<< endl;
 }
