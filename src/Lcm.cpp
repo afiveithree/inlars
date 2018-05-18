@@ -100,8 +100,10 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
 
     double gain_plus  = 0;
     double gain_minus = 0;
+    wbias = 0.0;
     //  cout << "size" << (int)transactionList.size() << endl;
     for (int i = 0; i < (int)transactionList.size(); i++) {
+      wbias += (double)q[i]; //instead :y
       if (q[transactionList[i]] >= 0)
         gain_plus  += (double)abs(q[transactionList[i]]);
       else
