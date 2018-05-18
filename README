@@ -1,0 +1,100 @@
+/////////////////////////////////////////////////
+/                                               /
+/  pLARS --- polynomial Least Angle RegreSsion  /
+/                                               /
+/////////////////////////////////////////////////
+
+Authors: Hiroto Saigo, Yasuo Tabei, Koji Tsuda
+
+License: GPL2 (GNU General Public License Version 2)
+
+
+
+********** Requirements:**********
+   C++ compiler with STL (Standard Template Library).
+   GMM++
+
+********** Install:**********
+  %cd src; make
+
+********** Usage:**********
+
+ 1) train mode
+
+     $./plars [options] traindata model
+
+     option:
+         -min_sup NUM:   set minimum support                 (default: 1)
+         -max_pat NUM:   set maximum pattern length   (default: infinity)
+         -maxiter NUM:   set maximum number of iterations (default: 1000)
+         -validation FILENAME: see below
+
+    Model accuracy on train data itself is reported in terms of both
+    Residual Sum of Squares (RSS) and Q2.
+    A models corresponding to i-th iteration is saved in the file
+    model"i", which is used in test mode.
+
+
+ 2) validation mode
+
+     $./plars [options] -validation validationdata model
+
+     A validation mode reports accuracy of learned model on validation set in
+     terms of both RSS and Q2. One can observe the decrease (increae) of
+     RSS (Q2) on validation set to choose a model.
+
+ 3) test mode
+
+     $./predict model testdata
+
+
+
+********** Format of input data:**********
+
+  2.519831	51 52 54 82 137 139 149 249 292 301 302 307 319
+  0.784100	22 52 120 155 196 249 270 319 336 338
+  -0.602195	52 75 83 101 155 161 236 249 272 286 291 307 319
+  4.272121	34 43 52 64 65 82 94 159 160 179 240 319 321 324
+  0.546428	12 13 22 52 59 72 82 100 160 191 204 249 266 271 283 299 302 30
+
+  Each line corresponds to each transaction. The first value is the
+  corresponding target response label (in real value), and the
+  integers following it are binary indicators of explanatory features.
+
+********** Format of model:**********
+
+  NO:0
+  WEIGHT:0.558
+  ITEMSETS:52 82
+  TRANSACTIONLIST:0 3 4 5 6 10 11 12 14 16 17 20 21 22 27 42 43 46 49
+  NO:1
+  WEIGHT:-0.739
+  ITEMSETS:129
+  TRANSACTIONLIST:28 33 34 36 37 38 39 40
+  NO:2
+  WEIGHT:0.243
+  ITEMSETS:82 179
+  TRANSACTIONLIST:10 12 18 19 20 27 41 42
+
+  A set of features appears in ITEMSETS field, with corresponding
+  WEIGHT and locations (TRANSACTION) it appears.
+
+  The learned model in this case is
+  f(x) = 0.558 * I(52 AND 82) - 0.739 * I(129) +0.243 * I(82 AND 179)
+  where I() is an indicator function, and AND is a logical and operator.
+
+********** Reference:**********
+
+* Mining complex genotypic features for predicting HIV-1 drug
+  resistance, Hiroto Saigo, Takeaki Uno, Koji Tsuda, Bioinformatics 23(18), 2455-2462, 2007.
+
+*  LCM ver.3: Collaboration of Array, Bitmap and Prefix Tree for Frequent Itemset Mining, Takeaki Uno, Masashi Kiyomi, Hiroki Arimura,
+  Open Source Data Mining Workshop on Frequent Pattern Mining
+  Implementations 2005.
+
+* Entire regularization paths for graph data, Koji Tsuda, In
+  Proceedings of the 24th International Conference on Machine
+  Learning, 919--926, 2007.
+
+* Least Angle Regression, Bradley Efron, Trevor Hastie, Iain Johnstone
+  and Robert Tibshirani, Annals of Statistics 32 (2), 407-499, 2004.
