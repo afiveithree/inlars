@@ -538,7 +538,6 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
       return;
 
     //check redundancy
-    vector<double> result(l);
     for (unsigned int i = 0; i < (unsigned int)transactionList.size(); i++){
       result[transactionList[i]] = +1;
     }
@@ -556,7 +555,7 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
             cout << f.itemsets[j] << " ";
           cout << "is SAME:" << sum << endl;
 #endif
-          return false; // pruning
+          return; // pruning
         }
       }
     }
