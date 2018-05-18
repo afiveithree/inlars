@@ -498,10 +498,10 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
 #ifdef DEBUG
     cout << "gain " << gain << endl;
 #endif
+    if (itemsets.size() == 0)
+      return;
     if (gain > maxGain){
       maxGain = gain;
-      if (itemsets.size() == 0)
-        return;
 
       feature.clear();
       feature.transactionList = transactionList;
