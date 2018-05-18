@@ -165,31 +165,6 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
     cout << " d " << d << " res1 " << res1 << " res2 " << res2 << " rhs " << rhs << " lhs " << lhs << " bound " << bound << endl;
 #endif
 
-    //check redundancy
-    vector<double> result(l);
-    for (unsigned int i = 0; i < (unsigned int)transactionList.size(); i++){
-      result[transactionList[i]] = +1;
-    }
-    for (size_t i = 0; i < features.size(); i++) {
-      Feature &f = features[i];
-      if(transactionList.size() == f.transactionList.size()){
-        double sum = 0;
-        for(unsigned int j = 0; j < l; j++)
-          sum += f.result[j]*result[j];
-
-        if(abs(sum)==transactionList.size()){
-#ifdef DEBUG
-          cout << "Itemset " << i << ": ";
-          for (size_t j = 0; j < f.itemsets.size(); j++)
-            cout << f.itemsets[j] << " ";
-          cout << "is SAME:" << sum << endl;
-#endif
-          return false; // pruning
-        }
-      }
-    }
-
-
     if(bound < 0 && etadiff > 0.001){
       return false; // pruning
     }else{

@@ -534,6 +534,30 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
 
     if (itemsets.size() == 0)
       return;
+
+    //check redundancy
+    vector<double> result(l);
+    for (unsigned int i = 0; i < (unsigned int)transactionList.size(); i++){
+      result[transactionList[i]] = +1;
+    }
+    for (size_t i = 0; i < features.size(); i++) {
+      Feature &f = features[i];
+      if(transactionList.size() == f.transactionList.size()){
+        double sum = 0;
+        for(unsigned int j = 0; j < l; j++)
+          sum += f.result[j]*result[j];
+
+        if(abs(sum)==transactionList.size()){
+#ifdef DEBUG
+          cout << "Itemset " << i << ": ";
+          for (size_t j = 0; j < f.itemsets.size(); j++)
+            cout << f.itemsets[j] << " ";
+          cout << "is SAME:" << sum << endl;
+#endif
+          return false; // pruning
+        }
+      }
+    }
 #ifdef DEBUG
     cout << "additem d " << d << " maxGain " << maxGain << endl;
 #endif
