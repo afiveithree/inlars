@@ -33,6 +33,7 @@ void Lcm::Run() {
   minItem = database.GetMinItem();
 
   pruning_number  = 0;
+  nodes_number = 0;
   total_mine_time = 0;
   numerical_time         = 0;
 
@@ -538,9 +539,6 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
       return;
 
     //check redundancy
-    for (unsigned int i = 0; i < (unsigned int)transactionList.size(); i++){
-      result[transactionList[i]] = +1;
-    }
     for (size_t i = 0; i < features.size(); i++) {
       Feature &f = features[i];
       if(transactionList.size() == f.transactionList.size()){
