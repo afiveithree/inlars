@@ -51,6 +51,9 @@ void Lcm::LcmIter(Database &database, vector<int> &itemsets, vector<int> &transa
     return;
   }
   nodes_number += 1;
+#ifdef DEBUG
+  cout << "GainTest done" << endl;
+#endif
   AddItem(itemsets, transactionList, boundType);
 
   //  PrintItemsets(itemsets, occ); // print frequent itemset
@@ -113,11 +116,10 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
     gain_plus  = 2*gain_plus  - wbias;
     gain_minus = 2*gain_minus + wbias;
 
-    // cerr << "gain:" << gain_plus << " " <<  gain_minus << " " << maxGain << endl;
-
-#ifdef DEBUG_MODE
-    cerr << wbias << endl;
-#endif // DEBUG_MODE
+#ifdef DEBUG
+    cout << "gain:" << gain_plus << " " <<  gain_minus << " " << maxGain << endl;
+    cout << "wbias:" << wbias << endl;
+#endif // DEBUG
 
     return (max(gain_plus, gain_minus) < maxGain) ? false: true;
 
@@ -158,7 +160,9 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
     double bound = lhs - rhs;
 
 #ifdef DEBUG
-    cout << transactionList << endl;
+    for (int i = 0; i < (int)transactionList.size(); i++)
+      cout << transactionList[i] << " ";
+    cout << endl;
     cout << "eta0 " << eta0 << " eta " << eta << endl;
     cout << "rho0 " << rho0 << " rho " << rho << endl;
     cout << "etadiff " << etadiff << " nextGain " << nextGain << endl;

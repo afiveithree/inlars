@@ -33,7 +33,7 @@ void Lcm::Run() {
   minItem = database.GetMinItem();
 
   pruning_number  = 0;
-  nodes_number = 0;
+  nodes_number    = 0;
   total_mine_time = 0;
   numerical_time         = 0;
 
@@ -103,7 +103,10 @@ void Lcm::Run() {
       for (size_t j = 0; j < f.itemsets.size(); j++)
         cout << f.itemsets[j] << " ";
       cout << endl;
-      cout << "occurrance:" << features[i].result << endl << endl;;
+      cout << "occurrance:";
+      for (int j = 0; j < (int)features[i].result.size(); j++)
+        cout << features[i].result[j];
+      cout << endl << endl;;
     }
 
     vector<double> pred; pred.resize(l);
@@ -253,7 +256,7 @@ void Lcm::Run() {
 
 
         Feature &f = features[itr+1-removed];
-        cout << "---variable ";
+        cout << endl << "---variable ";
         for (size_t j = 0; j < f.itemsets.size(); j++){
           cout << f.itemsets[j] << " ";
         }
@@ -274,7 +277,7 @@ void Lcm::Run() {
 
         vector<Feature>::iterator _itr5 = features.begin() + minid2;
         Feature &f = features[minid2];
-        cout << "---variable ";
+        cout << endl << "---variable ";
         for (size_t k = 0; k < f.itemsets.size(); k++)
           cout << f.itemsets[k] << " ";
         cout << "removed---" << endl;
@@ -356,7 +359,7 @@ void Lcm::Run() {
       }
       double Q2 = 1.0 - rss/var;
 
-      cout << endl << "ITERATION: " << itr+1;
+      cout << "ITERATION: " << itr+1;
       cout << " Train RSS: " << rss << " Q2: " << Q2 << endl;
 
       stringstream s_itr;
@@ -553,7 +556,7 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
             cout << f.itemsets[j] << " ";
           cout << "is SAME:" << sum << endl;
 #endif
-          return; // pruning
+          return;
         }
       }
     }
