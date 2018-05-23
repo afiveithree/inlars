@@ -3,12 +3,12 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "gmm.h"
-#include "gmm_dense_qr.h"
+#include <eigen3/Eigen/Dense>
 #include "Database.h"
 #include <algorithm>
 
-using namespace gmm;
+using namespace Eigen;
+template <typename T> inline T sgn(T a) { return (a < T(0)) ? T(-1) : T(1); }
 
 /************************************************************************
  * Init
@@ -41,7 +41,7 @@ void Lcm::Run() {
   for (unsigned int i = 0; i < l; i++)
     y[i] = database.database[i].label;
 
-  try {
+  // try {
 
     // Normalize target response values
     double sumY = 0;
@@ -55,8 +55,8 @@ void Lcm::Run() {
     //    for (unsigned int i = 0; i < l; i++)
     //      y[i] = (y[i]-meanY)/stdy;
 
-    for (unsigned int i = 0; i < l; i++)
-      y[i] = (y[i]-meanY);
+    //    for (unsigned int i = 0; i < l; i++)
+    //      y[i] = (y[i]-meanY);
 
     q.resize(l);    uw.resize(l); uv.resize(l);
     for (unsigned int i = 0; i < l; i++){
@@ -75,25 +75,16 @@ void Lcm::Run() {
     cout << "added---" << endl;
 
     rho0 = 0; eta0 = 0;
-    vector<vector<unsigned int> > Xa;
-    vector<unsigned int> xrow;
-    xrow.resize(l); fill(xrow.begin(),xrow.end(),0);
+    MatrixXd Xa(l,1);
+    Map<VectorXi > xrow(&(features[0].result[0]),l);
+    Xa.col(0) = xrow.cast<double>();
 
-    double sumGAinv = 0;
-    const vector<int> &result = features[0].result;
-    for (unsigned int i = 0; i < l; i++) {
-      xrow[i]=result[i]; // binary occurrance vector
-      sumGAinv += xrow[i];
-    }
-    Xa.push_back(xrow);
+    lambda = xrow.transpose().cast<double>()*y;
+    VectorXd x(1); x.setZero();
+    VectorXd z(1);
+    uh.resize(l);
+    ug.resize(l);
 
-    double corr = 0.0;
-    for(unsigned int i = 0; i < l; i++){
-      corr -= xrow[i]*y[i];
-    }
-    vector<double> gamma; gamma.push_back(-sgn(corr));
-    vector<double> s; s.push_back(-sgn(corr));
-    vector<double> beta; beta.push_back(0.0);
     unsigned int removed = 0;
 
 #ifdef DEBUG
@@ -108,12 +99,10 @@ void Lcm::Run() {
         cout << features[i].result[j];
       cout << endl << endl;;
     }
+#endif
 
-    vector<double> pred; pred.resize(l);
-    fill(pred.begin(), pred.end(), 0);
-    for(unsigned int i = 0; i < l; i++)
-      for(unsigned int j = 0; j < 1; j++)
-        pred[i] += Xa[j][i]*beta[j];
+    VectorXd pred(l);
+    pred = Xa * x;
     double var = 0.0;
     double rss = 0.0;
     for(unsigned int i = 0; i < l; i++){
@@ -121,71 +110,38 @@ void Lcm::Run() {
       rss += (y[i] - pred[i])*(y[i] - pred[i]);
     }
     double Q2 = 1.0 - rss/var;
-    cout << "Train Q2 " << Q2 << " rss " << rss << " var " << var << endl;
-#endif
-
-    gmm::dense_matrix<double> C;
+    cout << "ITERATION: 0 Train RSS: " << rss << " Q2: " << Q2 << " var " << var << endl << endl;
+    double Q2_prev = Q2;
+    double Q2_val_prev = 0;
 
     //MAIN ITERATION
-    for(unsigned int itr = 0; itr < maxiter; itr++){
+    for(unsigned int itr = 0; itr < maxiter && lambda > 0; itr++){
       if(itr >= l*3){
         cerr << "Iteration limit reached" << endl;
         End_clock(allstart);
         exit(0);
       }
-      unsigned int n = beta.size();
-      double maxabsuw = 0;
-      int maxi = -1;
+      unsigned int n = x.size();
 
-      for(unsigned int j = 0; j < n; j++)
-        gamma[j] /= sqrt(sumGAinv);
-
-      for(unsigned int i = 0; i < l; i++){
-        uw[i] = -y[i];
-        for(unsigned int j = 0; j < n; j++){
-          uw[i] += beta[j]*Xa[j][i];
-        }
-        if(abs(uw[i]) > maxabsuw){
-          maxi = i;
-          maxabsuw = abs(uw[i]);
-        }
-        uv[i] = 0;
-        for(unsigned int j = 0; j < n; j++){
-          uv[i] -= gamma[j]*Xa[j][i];
-        }
-      }
-
-      int min_size = 10000000;
-      int min_id = -1;
-      for(unsigned int j = 0; j < n; j++){
-        int cur_size = 0;
-        for(unsigned int i = 0; i < l; i++){
-          cur_size += Xa[j][i];
-        }
-        if(cur_size < min_size) min_size = cur_size;
-        min_id = j;
-      }
-
-      rho0 = 0; eta0 = 0;
-      for(unsigned int i = 0; i < l; i++){
-        rho0 += uw[i]*Xa[min_id][i];
-        eta0 += uv[i]*Xa[min_id][i];
-      }
-
+      z.resize(n);
+      z = (Xa.transpose() * Xa).ldlt().solve(Xa.transpose() * y); // use llt().solve for large matrix
+      ug = Xa * x - y;
+      uh = Xa * z - y;
 
 #ifdef DEBUG
-      cout << "y:" << y << endl;
-      cout << "uw:" << uw << endl;
-      cout << "MAXCORR : " << maxabsuw << " at " << maxi << endl;
-      cout << "uv: " << uv << endl;
-      cout << "rho0:" << rho0 << "eta0:" << eta0 << endl;
+      cout <<"Xat x Xa" << endl << Xa.transpose() * Xa << endl;
+      cout <<"(Xat x Xa) -1" << endl << (Xa.transpose() * Xa).inverse() << endl;
+      cout << "y:" << y.transpose() << endl;
+      cout << "ug:" << ug.transpose() << endl;
+      cout << "z: " << z.transpose() << endl;
+      cout << "uh: " << uh.transpose() << endl;
 
       vector<double> adv; adv.resize(n);
       double madv = 0;
       for(unsigned int i = 0; i < n; i++){
         adv[i] = 0;
         for(unsigned int j = 0; j < l; j++){
-          adv[i] += Xa[i][j]*uw[j];
+          adv[i] += Xa(i,j)*ug[j];
         }
         adv[i] = fabs(adv[i]);
         madv += adv[i];
@@ -213,11 +169,11 @@ void Lcm::Run() {
       int minid2 = -1;
       for(unsigned int j = 0; j < n; j++){
         double d2 = 0;
-        if(gamma[j] != 0){
-          d2 = -beta[j]/gamma[j];
+        if(z[j] < 0){
+          d2 = x[j]/(x[j]-z[j]);
         }
 #ifdef DEBUG
-        cout << "beta[j] " << beta[j] << " gamma[j] " << gamma[j] << " d2=-beta[j]/gamma[j] " << d2 << endl;
+        cout << "x[j] " << x[j] << " z[j] " << z[j] << " d2=x[j]/(x[j]-z[j]) " << d2 << endl;
 #endif
         if( (d2 > 0.000001) && (d2 < mind2) ){
           mind2 = d2;
@@ -236,24 +192,17 @@ void Lcm::Run() {
       }
 
       if(mind1 < mind2){
-        for(unsigned int j = 0; j < n; j++){
-          beta[j] += mind1*gamma[j];
-        }
-        beta.push_back(0.0);
+        x += mind1*(z - x); // int n = x.size();
+        x.conservativeResize(n+1); x(n) = 0;
 
-        fill(xrow.begin(), xrow.end(), 0);
-        const vector <int> &result = features[itr+1-removed].result;
-        for (unsigned int i = 0; i < l; i++) {
-          xrow[i] = result[i]; // binary occurance vector
-        }
-        Xa.push_back(xrow);
-
-        corr = 0;
-        for (unsigned int i = 0; i < l; i++) {
-          corr += uw[i]*xrow[i];
-        }
-        s.push_back(-sgn(corr));
-
+        new (&xrow) Map<VectorXi > (&(features[itr+1-removed].result[0]), l);
+        Xa.conservativeResize(NoChange, n+1); Xa.col(Xa.cols()-1).setZero();
+        Xa.col(Xa.cols()-1) = xrow.cast<double>();
+#ifdef DEBUG
+        cout << "added" << endl;
+        cout << "Xa" << endl << Xa << endl;
+#endif
+        lambda *= (1-mind1);
 
         Feature &f = features[itr+1-removed];
         cout << endl << "---variable ";
@@ -264,16 +213,25 @@ void Lcm::Run() {
 
 
       }else{ // mind1 > mind2
-        for(unsigned int j = 0; j < n; j++){
-          beta[j] += mind2*gamma[j];
-        }
+        Xa.rightCols(n-minid2).leftCols(n-1-minid2) = Xa.rightCols(n-1-minid2);
+        Xa.conservativeResize(NoChange, n-1); // better with permutation?
 
-        vector<vector<unsigned int> >::iterator _itr1 = Xa.begin() + minid2;
-        Xa.erase(_itr1);
-        vector<double>::iterator _itr2 = beta.begin() + minid2;
-        beta.erase(_itr2);
-        vector<double>::iterator _itr3 = s.begin() + minid2;
-        s.erase(_itr3);
+        x += mind2*(z - x); // int n = x.size();
+        x.segment(minid2, n-1-minid2) = x.tail(n-1-minid2);
+        x.conservativeResize(n-1);
+
+        z.segment(minid2, n-1-minid2) = z.tail(n-1-minid2);
+        z.conservativeResize(n-1);
+
+        // h.segment(i, n-1-minid2) = h.tail(n-1-minid2);
+        // h.conservativeResize(n-1);
+#ifdef DEBUG
+        cout << "removed" << endl;
+        cout << "Xa" << endl << Xa << endl;
+        cout << "x" << endl << x << endl;
+        cout << "z" << endl << z << endl;
+#endif
+        lambda *= (1-mind2);
 
         vector<Feature>::iterator _itr5 = features.begin() + minid2;
         Feature &f = features[minid2];
@@ -294,60 +252,26 @@ void Lcm::Run() {
         for (size_t j = 0; j < f.itemsets.size(); j++)
           cout << f.itemsets[j] << " ";
         cout << endl;
-        cout << "occurrance:" << features[i].result << endl;
+        for (int j = 0; j < (int)features[i].result.size(); j++)
+          cout << features[i].result[j];
+        cout << endl << endl;;
       }
 #endif
 
-      n = beta.size();
-      C.resize(n,n);
-      for(unsigned int i = 0; i < n; i++){
-        for(unsigned int j = 0; j < n; j++){
-          C(i,j) = 0;
-          for(unsigned int k = 0; k < l; k++){
-            C(i,j) += Xa[i][k]*Xa[j][k];
-          }
-        }
-      }
-
-      gamma.resize(n);
-      //      gmm::lu_solve(C,gamma,s); // Use this if contition number is larg
-      gmm::lu_inverse(C);
-      gmm::mult(C,s,gamma);
+      n = x.size();
 
 #ifdef DEBUG
-      cout << "C " << C << endl;
-      cout << "condition number " << gmm::condition_number(C) << endl;
-      cout << "uw" << uw << endl;
-      cout << "x " << xrow << endl;
-      cout << "s " << s << endl;
+      cout << "ug" << ug.transpose() << endl;
+      cout << "xrow " << xrow.transpose() << endl;
       cout << "ITERATION: " << itr+1 << " mind1: " << mind1 << " mind2: " << mind2 << endl;
-      cout << "gamma:" << gamma << endl;
+      cout << "lambda:" << lambda << endl;
 #endif
-
-      for(unsigned int i = 0; i < gamma.size(); i++){
-        if(isnan(gamma[i]) || isinf(gamma[i])){
-          cout << "STOP" << endl;
-          End_clock(allstart);
-          exit(0);
-        }
-      }
-
-      sumGAinv = 0;
-      if(n > 1){
-        //  gmm::lu_inverse(C);
-        for(unsigned int a = 0; a < n; a++)
-          for(unsigned int b = 0; b < n; b++)
-            sumGAinv += s[a]*s[b]*C(a,b); // Note that C is inversed
-      }
 
       numerical_end_time = clock();
       numerical_time += numerical_end_time - numerical_start_time;
 
-      vector<double> pred; pred.resize(l);
-      fill(pred.begin(), pred.end(), 0);
-      for(unsigned int i = 0; i < l; i++)
-        for(unsigned int j = 0; j < n; j++)
-          pred[i] += Xa[j][i]*beta[j];
+      VectorXd pred(l);
+      pred = Xa * x;
       double var = 0.0;
       double rss = 0.0;
       for(unsigned int i = 0; i < l; i++){
@@ -371,7 +295,7 @@ void Lcm::Run() {
         ofs << "NO:" << i << std::endl;
         ofs << "WEIGHT:";
         //  for(unsigned int i = 0; i < beta.size(); i++){
-        ofs << beta[i] << " ";
+        ofs << x[i] << " ";
         //  }
         ofs << std::endl;
         ofs << "ITEMSETS:";
@@ -384,6 +308,12 @@ void Lcm::Run() {
         ofs << std::endl;
       }
       ofs.close();
+      // NOTE: train-side diff check
+      if(abs((Q2-Q2_prev)/Q2) < 0.001){
+        End_clock(allstart);
+        exit(0);
+      }
+      Q2_prev=Q2;
 
       unsigned int m = validation_database.GetNumberOfTransaction();
       if(m > 0){
@@ -404,10 +334,11 @@ void Lcm::Run() {
               if( !binary_search(itemset.begin(), itemset.end(), f.itemsets[k])) break;
             }
             if( k == f.itemsets.size() ){
-              p += beta[j];
+              p += x[j];
             }
           }// end for j
-          val_p[i] = p;
+          val_p[i] = p; // l1nls fix : no normalize
+//          val_p[i] = p * stdy; // l1nls fix : var normalize only
 #ifdef DEBUG
           cout << "y " << val_y[i];
           cout << " p " << val_p[i] << endl;
@@ -429,13 +360,20 @@ void Lcm::Run() {
         cout << " Validation RSS: " << rss << " Q2: " << Q2 << endl;
 
       } //end if m > 0
+// // NOTE: validation-side diff check
+//      if(abs((Q2-Q2_val_prev)/Q2) < 0.001){
+//        End_clock(allstart);
+//        exit(0);
+//      }
+//      Q2_val_prev=Q2;
     } // end MAIN ITERATION
 
     End_clock(allstart);
 
-  } // end try
 
-  GMM_STANDARD_CATCH_ERROR;
+  // } // end try
+
+  // GMM_STANDARD_CATCH_ERROR;
 }
 
 /***************************************************************************
@@ -499,8 +437,8 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
   if(Type == 0){ // pls
     gain = 0.0;
     for (unsigned int i = 0; i < l; i++)
-      gain += q[i] * result[i];
-    gain = fabs(gain);
+      gain += y[i] * result[i];
+    // gain = fabs(gain); // l1nls search only positive area
 #ifdef DEBUG
     cout << "gain " << gain << endl;
 #endif
@@ -524,19 +462,14 @@ void Lcm::AddItem(const vector<int> itemsets, const vector<int> &transactionList
 
 
   }else{ // lars
-    double rho = 0; double eta = 0;
+    double g = 0; double h = 0;
     for (unsigned int i = 0; i < l; i++){
-      rho += uw[i] * result[i];
-      eta += uv[i] * result[i];
+      g += ug[i] * result[i];
+      h += uh[i] * result[i];
     }
-    double res1 = 0; double res2 = 0;// double d = 0;
-    if(eta0 - eta != 0.0){
-      res1 = max( (rho0 - rho) / (eta0 - eta), 0.0);
-    }
-    if(eta0 + eta != 0.0){
-      res2 = max( (rho0 + rho) / (eta0 + eta), 0.0);
-    }
-    double d = min (res1, res2);
+    if (h >= 0)
+      return;
+    double d = (lambda + g) / (lambda + g - h);
 
     if (itemsets.size() == 0)
       return;

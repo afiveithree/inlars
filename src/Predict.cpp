@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   //  double mean_py = 0.f;
   for (size_t i = 0; i < l; i++) {
     mean_y += ys[i];
-    //    mean_py += ps[i];
+    //  mean_py += ps[i];
   }
   mean_y = mean_y/l;
   //  mean_py = mean_py/l;
@@ -114,10 +114,10 @@ int main(int argc, char **argv) {
   }
   stdy = sqrt(stdy/(l-1));
   //  stdpy = sqrt(stdpy/(l-1));
-  for (size_t i = 0; i < l; i++) {
-    ys[i] = (ys[i]-mean_y);//stdy;
-    //  ps[i] = (ps[i]-mean_py)/stdpy;
-  }
+  // //  for (size_t i = 0; i < l; i++) { // l1nls no-normalize
+  // //     ys[i] = (ys[i]-mean_y);//stdy;
+  // //     //  ps[i] = (ps[i]-mean_py)/stdpy;
+  // //  }
 
   double rss = 0.f;
   cout << "label\t prediction" << endl;

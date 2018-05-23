@@ -11,8 +11,10 @@
 #include <cmath>
 #include "Database.h"
 #include "OccurenceDeriver.h"
+#include <eigen3/Eigen/Dense>
 
 using namespace std;
+using namespace Eigen;
 
 class Feature {
   public:
@@ -95,7 +97,7 @@ class Lcm {
   double nextGain;
   double d;
   vector<double> q;
-  vector<double> y;
+  VectorXd y;
   double sigma;
   unsigned int topL;
   unsigned int maxiter;
@@ -109,8 +111,12 @@ class Lcm {
 
   double eta0;
   double rho0;
+  double lambda;
   vector<double> uv;
   vector<double> uw;
+  // VectorXd g; : gain
+  VectorXd uh;
+  VectorXd ug;
 
   time_t mine_start_time;
   time_t mine_end_time;

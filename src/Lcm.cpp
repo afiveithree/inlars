@@ -113,65 +113,55 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
       else
         gain_minus += (double)abs(q[transactionList[i]]);
     }
-    gain_plus  = 2*gain_plus  - wbias;
-    gain_minus = 2*gain_minus + wbias;
 
 #ifdef DEBUG
     cout << "gain:" << gain_plus << " " <<  gain_minus << " " << maxGain << endl;
     cout << "wbias:" << wbias << endl;
 #endif // DEBUG
 
-    return (max(gain_plus, gain_minus) < maxGain) ? false: true;
+    return (gain_minus < maxGain) ? false: true; // pruning
 
   }else{ // lars
-    double eta = 0; double eta_plus  = 0;  double eta_minus = 0;
-    double rho = 0; double rho_plus  = 0;  double rho_minus = 0;
+    double g = 0; double g_plus  = 0;  double g_minus = 0;
+    double h = 0; double h_plus  = 0;  double h_minus = 0;
 
     for (int i = 0; i < (int)transactionList.size(); i++) {
-      rho += uw[transactionList[i]];
-      eta += uv[transactionList[i]];
+      g += ug[transactionList[i]];
+      h += uh[transactionList[i]];
 
-      if (uv[transactionList[i]] >= 0){
-        eta_plus  += (double)abs(uv[transactionList[i]]);
+      if (uh[transactionList[i]] >= 0){
+        h_plus  += (double)abs(uh[transactionList[i]]);
       }else{
-        eta_minus += (double)abs(uv[transactionList[i]]);
+        h_minus += (double)abs(uh[transactionList[i]]);
       }
 
-      if(uw[transactionList[i]] >= 0){
-        rho_plus  += (double)abs(uw[transactionList[i]]);
+      if(ug[transactionList[i]] >= 0){
+        g_plus  += (double)abs(ug[transactionList[i]]);
       }else{
-        rho_minus += (double)abs(uw[transactionList[i]]);
+        g_minus += (double)abs(ug[transactionList[i]]);
       }
     }
 
-    double res1=0; double res2=0;
-    if(eta0-eta != 0.0){
-      res1 = max( (rho0-rho)/(eta0-eta), 0.0);
-    }
-    if(eta0+eta != 0.0){
-      res2 = max( (rho0+rho)/(eta0+eta), 0.0);
-    }
-    double d = min(res1,res2);
+    double d = (lambda + g) / (lambda + g - h);
     d = max(d,0.000001);
 
-    double etadiff = (double)(fabs(eta0)-fabs(eta)); // check nextGain==!?tau
-    double rhs = (double)(fabs(rho0)-nextGain*fabs(eta0));
-    double lhs = (double)(max(rho_plus,rho_minus) + nextGain*max(eta_plus,eta_minus));
-    double bound = lhs - rhs;
+    // double t = h / (lambda + g);
+    // double diff = - h_minus - h_plus - t*(lambda + min(-g_minus,g_plus));
 
 #ifdef DEBUG
     for (int i = 0; i < (int)transactionList.size(); i++)
       cout << transactionList[i] << " ";
     cout << endl;
-    cout << "eta0 " << eta0 << " eta " << eta << endl;
-    cout << "rho0 " << rho0 << " rho " << rho << endl;
-    cout << "etadiff " << etadiff << " nextGain " << nextGain << endl;
-
-    cout << " d " << d << " res1 " << res1 << " res2 " << res2 << " rhs " << rhs << " lhs " << lhs << " bound " << bound << endl;
+    cout << "g " << g << endl;
+    cout << "h " << h << endl;
+    cout << "nextGain " << nextGain << endl;
+    cout << "d " << d << " t " << t << " lambda " << lambda << " diff " << diff << endl;
 #endif
 
-    if(bound < 0 && etadiff > 0.001){
+    if (g_plus < -lambda || h_minus == 0){
       return false; // pruning
+    // }else if(diff > 0){
+    //   return false
     }else{
       return true;
     }
