@@ -147,6 +147,7 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
 
     // double t = h / (lambda + g);
     // double diff = - h_minus - h_plus - t*(lambda + min(-g_minus,g_plus));
+    double expect = (lambda > g_minus) ? (lambda - g_minus)/(lambda - g_minus + h_minus) : 0.1;
 
 #ifdef DEBUG
     for (int i = 0; i < (int)transactionList.size(); i++)
@@ -162,6 +163,8 @@ inline bool Lcm::GainTest(const vector<int> &transactionList, int boundType)
       return false; // pruning
     // }else if(diff > 0){
     //   return false
+    }else if (expect > maxGain){
+      return false;
     }else{
       return true;
     }
