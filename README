@@ -1,10 +1,11 @@
 /////////////////////////////////////////////////
 /                                               /
-/  pLARS --- polynomial Least Angle RegreSsion  /
+/  iNLARS --- itemset Nonnegative               /
+/               Least Angle RegreSsion          /
 /                                               /
 /////////////////////////////////////////////////
 
-Authors: Hiroto Saigo, Yasuo Tabei, Koji Tsuda
+Authors: Mirai Takayanagi, Yasuo Tabei, Hiroto Saigo
 
 License: GPL2 (GNU General Public License Version 2)
 

@@ -1,7 +1,7 @@
 
 CXX = g++
 
-CXXFLAGS = -DNDEBUG -Wno-deprecated -finline-functions -I../gmm-5.0/include/gmm/
+CXXFLAGS = -DNDEBUG -Wno-deprecated -finline-functions -I../eigen/include/eigen3/Eigen/
 LINKFLAGS = -lm
 
 SRCS = \
